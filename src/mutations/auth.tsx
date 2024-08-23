@@ -14,6 +14,7 @@ export const useAuthMutation = () => {
 
   const mutation = useApiMutation("auth/login", {
     onSuccess: (data: AuthType) => {
+      console.log('succes')
       setUser(data)
       localforage.setItem("user", data);
       setLoading(false);

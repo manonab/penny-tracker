@@ -39,9 +39,10 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    Promise.reject(error);
+    return Promise.reject(error);
   }
 );
+
 
 export const useApiQuery = ({ key, url, config = {} }: IUseApiQuery): UseQueryResult<any, unknown> => {
   const { logout } = useAuth();
