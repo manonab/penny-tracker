@@ -1,8 +1,13 @@
-import { useMutation, useQuery, UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, UseMutationResult, UseQueryResult } from "@tanstack/react-query";
 import axios, { AxiosResponse, AxiosError } from "axios";
 import localforage from "localforage";
+
 import { useAuth } from "./context/auth-context";
 import { AuthType } from "../types/auth";
+
+export const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL,
+});
 
 interface IUseApiQuery {
   key: string;
@@ -14,10 +19,6 @@ interface IUseApiQuery {
     retry?: boolean | number | ((failureCount: number, error: AxiosError) => boolean);
   };
 }
-
-export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
-});
 
 apiClient.interceptors.request.use(
   async (config) => {
@@ -42,7 +43,7 @@ apiClient.interceptors.request.use(
   }
 );
 
-export const useApiQuery = <T>({ key, url, config = {} }: IUseApiQuery): UseQueryResult<T, AxiosError> => {
+export const useApiQuery = ({ key, url, config = {} }: IUseApiQuery): UseQueryResult<any, unknown> => {
   const { logout } = useAuth();
   return useQuery({
     queryKey: [key, url],
@@ -59,7 +60,7 @@ export const useApiQuery = <T>({ key, url, config = {} }: IUseApiQuery): UseQuer
           return Promise.reject(error);
         }
       );
-      const response: AxiosResponse<T> = await apiClient.get(url);
+      const response: AxiosResponse<any> = await apiClient.get(url);
       if (response.status === 401) logout();
       if (response.status !== 200) throw new Error("Error fetching data");
       return response.data;
@@ -68,15 +69,15 @@ export const useApiQuery = <T>({ key, url, config = {} }: IUseApiQuery): UseQuer
   });
 };
 
-export const useApiMutation = <TData, TVariables>(
+export const useApiMutation = (
   url: string,
   config = {},
   keys?: string[],
   method: "POST" | "PUT" | "DELETE" = "POST"
-): UseMutationResult<TData, AxiosError, TVariables, unknown> => {
-
-  let response: AxiosResponse<TData>;
-  return useMutation<TData, AxiosError, TVariables>({
+): UseMutationResult<any, unknown, any, unknown> => {
+  const queryClient = useQueryClient();
+  let response: AxiosResponse<any>;
+  return useMutation({
     mutationFn: async (data: unknown) => {
       if (method === "POST") {
         response = await apiClient.post(url, data);
@@ -87,6 +88,11 @@ export const useApiMutation = <TData, TVariables>(
       }
       if (response.status !== 200 && response.status !== 201) throw new Error("Error creating data");
       return response.data;
+    },
+    onSuccess: () => {
+      if (keys) {
+        queryClient.invalidateQueries({ queryKey: keys });
+      }    
     },
     ...config,
   });
