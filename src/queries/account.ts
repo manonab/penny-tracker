@@ -14,3 +14,18 @@ export const useGetBalanceDetails= (user_id: number | undefined) => {
   });
   return { getBalanceDatas, isError, isLoading };
 };
+
+export const useGetBalanceGeneral= (user_id: number | undefined) => {
+  const {
+    data: getBalanceGeneralDatas,
+    isError: isError,
+    isLoading: isLoading,
+  } = useApiQuery({
+    key: "get_general_balance",
+    url: `account/general-balance`,
+    config: {
+      enabled: !!user_id,
+    },
+  });
+  return { getBalanceGeneralDatas, isError, isLoading };
+};
